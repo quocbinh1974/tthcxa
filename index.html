@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>lưu trữ 23 PDF lĩnh vực – Tìm kiếm, Mã vạch & Drive Preview</title>
+  <!-- Thư viện mã vạch & QR (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <style>
+  /* ====== Light/Dark theme with CSS variables ====== */
+  :root{
+    /* Light theme (default) */
+    --bg:#f7fafc;           /* page background */
+    --bg-grad-1:#ffffff;    /* subtle gradient start */
+    --bg-grad-2:#f3f6fb;    /* subtle gradient end   */
+    --card:#ffffff;         /* card/panel background */
+    --border:#e5e7eb;       /* card border */
+    --muted:#5b6472;        /* secondary text */
+    --txt:#0f172a;          /* main text */
+    --acc:#2563eb;          /* accents */
+    --ok:#16a34a;           /* success */
+    --warn:#f59e0b;         /* warn */
+    --link:#1d4ed8;         /* link color */
+    --chip-bg:#eef2ff;      /* badge/pill bg */
+    --chip-bd:#c7d2fe;      /* badge/pill border */
+    --chip-tx:#3730a3;      /* badge/pill text */
+    --field:#ffffff;        /* input bg */
+    --field-bd:#d1d5db;     /* input border */
+    --item:#ffffff;         /* list item bg */
+    --item-bd:#e5e7eb;      /* list item border */
+  }
+  [data-theme="dark"]{
+    --bg:#0b1220; --bg-grad-1:#0b1220; --bg-grad-2:#0e172a; --card:#141c2f; --border:#1f2a44; --muted:#94a3b8; --txt:#e5e7eb; --acc:#60a5fa; --ok:#22c55e; --warn:#f59e0b; --link:#60a5fa; --chip-bg:#132349; --chip-bd:#1e3a8a; --chip-tx:#93c5fd; --field:#0f1830; --field-bd:#24314f; --item:#0c152d; --item-bd:#1f345d;
+  }
+
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Helvetica,Arial,sans-serif;background:linear-gradient(180deg,var(--bg-grad-1),var(--bg-grad-2));color:var(--txt)}
+  header{padding:16px;border-bottom:1px solid var(--border);background:var(--card);position:sticky;top:0;z-index:5}
+  h1{margin:0;font-size:20px;font-weight:800}
+  .sub{color:var(--muted);font-size:13px;margin-top:6px}
+
+  .wrap{max-width:1100px;margin:20px auto;padding:0 16px}
+  .panel{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px;box-shadow:0 6px 18px rgba(17,24,39,0.05)}
+  .panel h2{margin:0 0 10px;font-size:16px}
+  label{display:block;font-size:12px;color:var(--muted);margin:10px 0 6px}
+  input[type="text"], input[type="url"], select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--field-bd);background:var(--field);color:var(--txt)}
+  input[type="file"]{width:100%;}
+  .row{display:grid;grid-template-columns:repeat(12,1fr);gap:12px}
+  .row > .col-3{grid-column:span 3}
+  .row > .col-4{grid-column:span 4}
+  .row > .col-6{grid-column:span 6}
+  .row > .col-8{grid-column:span 8}
+  .row > .col-12{grid-column:span 12}
+
+  .btn{appearance:none;border:1px solid var(--border);border-radius:12px;padding:10px 14px;background:#f8fafc;color:var(--txt);cursor:pointer;font-weight:600}
+  .btn:hover{filter:brightness(0.98)}
+  .btn.acc{background:linear-gradient(135deg,#3b82f6,#06b6d4);color:#fff;border-color:transparent}
+  .btn.ok{background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border-color:transparent}
+  .btn.warn{background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;border-color:transparent}
+  .btn.ghost{background:transparent;border:1px dashed var(--border)}
+
+  .groups{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+  .group{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px}
+  .group h3{margin:0;font-size:15px}
+  .badge{display:inline-flex;align-items:center;gap:6px;padding:2px 8px;border-radius:999px;font-size:11px;background:var(--chip-bg);color:var(--chip-tx);border:1px solid var(--chip-bd)}
+
+  .items{display:flex;flex-direction:column;gap:8px;max-height:260px;overflow:auto;border-top:1px dashed var(--border);padding-top:8px}
+  .item{background:var(--item);border:1px solid var(--item-bd);border-radius:12px;padding:10px}
+  .item .t{font-weight:700;font-size:14px}
+  .item .c{color:var(--muted);font-size:12px;margin-top:4px}
+  .item .act{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+
+  .searchbar{display:flex;gap:10px;align-items:center}
+  .searchbar input{flex:1}
+
+  .results{margin-top:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px;box-shadow:0 6px 18px rgba(17,24,39,0.05)}
+  .card h4{margin:0;font-size:15px}
+  .hint{font-size:12px;color:var(--muted)}
+  .kv{display:grid;grid-template-columns:120px 1fr;gap:6px;font-size:13px}
+  .kv div:nth-child(odd){color:var(--acc)}
+  .links{display:flex;flex-wrap:wrap;gap:8px}
+  .barcode-wrap{display:flex;gap:16px;align-items:center;justify-content:flex-start;flex-wrap:wrap;border-top:1px dashed var(--border);padding-top:10px}
+  .barcode{width:200px;height:64px;background:#fff;border-radius:8px;padding:6px}
+  .qr{width:128px;height:128px;background:#fff;border-radius:8px;padding:6px}
+
+  .footer{color:var(--muted);font-size:12px;text-align:center;margin:24px 0}
+  .pill{padding:4px 8px;border-radius:999px;background:var(--chip-bg);border:1px solid var(--chip-bd);color:var(--chip-tx);font-size:11px}
+
+  .drive-frame{width:100%;height:480px;border:0;border-radius:12px;overflow:hidden;background:#fff}
+  @media (max-width:640px){ .drive-frame{height:360px} }
+
+  .header-actions{display:flex;gap:8px;align-items:center;margin-top:10px}
+  .toggle{display:inline-flex;align-items:center;gap:8px}
+  .toggle input{appearance:none;width:44px;height:24px;border-radius:999px;background:#e5e7eb;position:relative;outline:none;border:1px solid var(--border);cursor:pointer}
+  .toggle input:after{content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;background:#fff;border-radius:999px;box-shadow:0 1px 2px rgba(0,0,0,.12)}
+  [data-theme="dark"] .toggle input{background:#334155}
+  [data-theme="dark"] .toggle input:after{background:#0ea5e9}
+  .toggle input:checked:after{left:22px}
+
+  @media print{
+    body{background:#fff;color:#000}
+    header,.panel,.searchbar,.footer{display:none}
+    .card{break-inside:avoid}
+    .barcode,.qr{filter:none}
+  }
+</style>
+</head>
+<body>
+  <header>
+  <h1>20 LĨNH VỰC VỀ THỦ TỤC HÀNH CHÍNH CẤP XÃ CẦN BIẾT MÃ VẠCH ĐỂ HƯỚNG DẪN CB, CC VÀ NHÂN DÂN THỰC HIỆN</h1>
+  <div class="sub">Giao diện sáng mặc định cho dễ nhìn. Có thể bật tối nếu cần.</div>
+  <div class="header-actions">
+    <label class="toggle" title="Đổi giao diện sáng/tối">
+      <span>Chế độ tối</span>
+      <input id="themeToggle" type="checkbox" />
+    </label>
+  </div>
+</header>
+
+  <div class="wrap">
+    <!-- 0) Thiết lập chung -->
+    <section class="panel">
+      <h2>0) Thiết lập chung</h2>
+      <div class="row">
+        <div class="col-6">
+          <label>Liên hệ khi cần tải về (hiển thị khi khóa tải):</label>
+          <input id="inpOwnerContact" type="text" placeholder="Ví dụ: 090x xxx xxx (Anh/Chị …), email@coquan.vn" />
+        </div>
+        <div class="col-6">
+          <label>Gợi ý phân quyền Drive</label>
+          <div class="hint">Trên Google Drive: Chia sẻ ➜ <b>Anyone with the link: Viewer</b> ➜ Bật <b>“Prevent viewers from downloading, printing, copying”</b>. Dán link vào “Liên kết trực tuyến (URL)” bên dưới (code sẽ tự chuyển sang chế độ preview).</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 1) Thêm lĩnh vực -->
+    <section class="panel">
+      <h2>1) Thêm lĩnh vực (tối đa 23)</h2>
+      <div class="row">
+        <div class="col-6">
+          <label>Tên lĩnh vực</label>
+          <input id="inpGroupName" type="text" placeholder="Ví dụ: Bảo hiểm xã hội, bảo hiểm y tế" />
+        </div>
+        <div class="col-6">
+          <label>Chọn PDF lĩnh vực (tùy chọn)</label>
+          <input id="inpGroupPdf" type="file" accept="application/pdf" />
+        </div>
+        <div class="col-12">
+          <button class="btn acc" id="btnAddGroup">+ Thêm lĩnh vực</button>
+          <button class="btn ghost" id="btnBulkPdf">+ Thêm nhiều PDF (tạo nhiều lĩnh vực)</button>
+          <span id="groupCount" class="pill">0 / 23 lĩnh vực</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2) Danh sách lĩnh vực -->
+    <section class="panel">
+      <h2>2) Danh sách lĩnh vực</h2>
+      <div id="groups" class="groups"></div>
+    </section>
+
+    <!-- 3) Tìm kiếm -->
+    <section class="panel">
+      <h2>3) Tìm kiếm thủ tục (theo tên, mã RQ, tên lĩnh vực)</h2>
+      <div class="searchbar">
+        <input id="inpSearch" type="text" placeholder="Gõ từ khóa… ví dụ: cấp sổ, RQ H41, đăng ký BHXH" />
+        <button class="btn" id="btnClear">Xóa</button>
+        <button class="btn ok" id="btnExport">Xuất dữ liệu JSON</button>
+        <label class="btn ghost" for="impJson">Nhập dữ liệu JSON</label>
+        <input id="impJson" type="file" accept="application/json" style="display:none"/>
+      </div>
+      <div class="results" id="results"></div>
+    </section>
+
+    <!-- 4) Tự kiểm thử -->
+    <section class="panel">
+      <h2>4) Tự kiểm thử (Self-test)</h2>
+      <div class="hint">Nhấn nút để chạy các ca kiểm thử QR/Barcode, Drive preview & fallback.</div>
+      <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn" id="btnRunTests">Chạy tự kiểm thử</button>
+        <span id="testSum" class="pill">Chưa chạy</span>
+      </div>
+      <div id="testLog" style="margin-top:10px;font-size:12px;color:#cbd5e1;white-space:pre-wrap"></div>
+    </section>
+
+    <div class="footer">Mẹo: Dùng link <b>Drive preview</b> để xem được mà không tải về. Nếu ai cần tải, để lại liên hệ; hoặc dùng nút <b>Copy link</b> và xử lý thủ công theo quy trình.</div>
+  </div>
+
+  <script>
+    // ====== Tiện ích ======
+    const $$ = (sel, root=document)=>root.querySelector(sel);
+    const $$$ = (sel, root=document)=>Array.from(root.querySelectorAll(sel));
+    const uid = ()=>Math.random().toString(36).slice(2)+Date.now().toString(36);
+
+    // Bỏ dấu tiếng Việt để tìm kiếm không dấu
+    const fold = (s)=> (s||"")
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/\p{Diacritic}/gu, '')
+      .replace(/đ/g,'d');
+
+    // Lưu/đọc localStorage
+    const STORAGE_KEY = 'lv_pdf_store_v2_drive';
+    const saveStore = ()=> localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+    const loadStore = ()=> { try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)||'null') }catch(e){return null} };
+
+    // ====== Chuẩn hóa & nhận diện link Google Drive/Docs ======
+    function extractIdFromPath(parts){ return parts.find((p,i)=> parts[i-1]==='d') || null }
+    function normalizeDriveLink(u){
+      if(!u) return '';
+      try{
+        const url = new URL(u);
+        const host = url.host;
+        const p = url.pathname.split('/').filter(Boolean);
+        const q = url.searchParams;
+        // drive file: /file/d/<id>/...
+        if(host.includes('drive.google.') && p[0]==='file' && p[1]==='d' && p[2]){
+          return `https://drive.google.com/file/d/${p[2]}/preview`;
+        }
+        // drive open?id=<id>
+        if(host.includes('drive.google.') && url.pathname.startsWith('/open') && q.get('id')){
+          return `https://drive.google.com/file/d/${q.get('id')}/preview`;
+        }
+        // docs: document / spreadsheets / presentation
+        if(host.includes('docs.google.') && p[1]==='d' && p[2]){
+          const app = p[0]; // document | spreadsheets | presentation | forms
+          return `https://docs.google.com/${app}/d/${p[2]}/preview`;
+        }
+        // drive folder
+        if(host.includes('drive.google.') && p[0]==='drive' && p[1]==='folders' && p[2]){
+          // folder không có preview dạng /preview ổn định, giữ nguyên
+          return u;
+        }
+        return u;
+      }catch(e){ return u; }
+    }
+    function isDrivePreview(u){
+      try{ const url = new URL(u); return (url.host.includes('drive.google.')||url.host.includes('docs.google.')) && url.pathname.includes('/preview'); }catch{return false}
+    }
+
+    // ====== Dữ liệu ======
+    /** store = { ownerContact: '', groups: [ { id, name, pdfName, pdfUrl, items: [ { id, code, title, extUrl, fileName, fileUrl, contact } ] } ] } */
+    let store = loadStore() || { ownerContact:'', groups: [] };
+
+    // Nạp sẵn 1 nhóm mẫu nếu trống (4 TTHC theo file bạn cung cấp)
+    if(!store.groups.length){
+      const g = { id: uid(), name: 'Bảo hiểm xã hội, bảo hiểm y tế', pdfName: '', pdfUrl: '', items: [] };
+      g.items.push({ id: uid(), code:'1.002759.000.00.00.H41', title:'Cấp lại, đổi, điều chỉnh thông tin trên sổ BHXH, thẻ BHYT', extUrl:'', fileName:'', fileUrl:'', contact:'' });
+      g.items.push({ id: uid(), code:'1.002179.000.00.00.H41', title:'Đăng ký, đăng ký lại, điều chỉnh đóng BHXH tự nguyện; cấp sổ BHXH', extUrl:'', fileName:'', fileUrl:'', contact:'' });
+      g.items.push({ id: uid(), code:'1.001939.000.00.00.H41', title:'Đăng ký đóng, cấp thẻ BHYT đối với người chỉ tham gia BHYT', extUrl:'', fileName:'', fileUrl:'', contact:'' });
+      g.items.push({ id: uid(), code:'1.002051.000.00.00.H41', title:'Đăng ký, điều chỉnh đóng BHXH, BHYT, BHTN, BHTNLĐ, BNN; cấp sổ BHXH, thẻ BHYT', extUrl:'', fileName:'', fileUrl:'', contact:'' });
+      store.groups.push(g); saveStore();
+    }
+
+    // ====== Fallback QR & chọn nội dung an toàn ======
+    const MAX_QR_TEXT = 180; // giới hạn an toàn gần đúng
+    function chooseLinkForQR(g, it){
+      const raw = it.extUrl || it.fileUrl || g.pdfUrl || '';
+      const norm = normalizeDriveLink(raw);
+      const use = norm || raw;
+      if(use && !use.startsWith('blob:') && use.length <= MAX_QR_TEXT) return use;
+      const appLink = `${location.origin}${location.pathname}#open=${encodeURIComponent(it.id)}`; // deep-link ngắn
+      return appLink;
+    }
+
+    function clearNode(n){ while(n && n.firstChild){ n.removeChild(n.firstChild); } }
+
+    function safeGenBarcode(svgSelectorOrEl, value){
+      try{ JsBarcode(svgSelectorOrEl, String(value||''), {format:'code128', lineColor:'#000', background:'#fff', height:48, width:2, displayValue:true, fontSize:14, margin:6}); }
+      catch(e){ if(typeof svgSelectorOrEl === 'string'){const el = $$(svgSelectorOrEl); if(el){el.outerHTML = `<div class=\"hint\">Không tạo được mã vạch: ${e.message||e}</div>`}} }
+    }
+
+    function safeGenQR(containerEl, text){
+      clearNode(containerEl);
+      try{ new QRCode(containerEl, {text, width:128, height:128, correctLevel: QRCode.CorrectLevel.M}); return {ok:true, text}; }
+      catch(e){ // overflow hoặc lỗi khác -> fallback sang rút gọn
+        const fb = String(text).slice(0, MAX_QR_TEXT);
+        clearNode(containerEl);
+        try{ new QRCode(containerEl, {text: fb, width:128, height:128, correctLevel: QRCode.CorrectLevel.M}); return {ok:false, text:fb, error:e}; }
+        catch(e2){ containerEl.innerHTML = `<div class=\"hint\">Không tạo được QR: ${e2.message||e2}</div>`; return {ok:false, text:null, error:e2}; }
+      }
+    }
+
+    function copyToClipboard(str){
+      try{ navigator.clipboard.writeText(str); alert('Đã copy: '+str); }
+      catch{ const ta=document.createElement('textarea'); ta.value=str; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); alert('Đã copy: '+str); }
+    }
+
+    // ====== Render ======
+    function refreshCounters(){ $$('#groupCount').textContent = `${store.groups.length} / 23 lĩnh vực`; }
+
+    function renderGroups(){
+      const wrap = $$('#groups');
+      wrap.innerHTML = '';
+      $$('#inpOwnerContact').value = store.ownerContact || '';
+
+      store.groups.forEach(g=>{
+        const el = document.createElement('div');
+        el.className='group';
+        el.innerHTML = `
+          <div style=\"display:flex;justify-content:space-between;align-items:center;gap:8px\">
+            <h3 title=\"${g.name}\">${g.name}</h3>
+            <span class=\"badge\" title=\"Số thủ tục trong nhóm\">${g.items.length} TT</span>
+          </div>
+          <div class=\"kv\" style=\"margin:6px 0\">
+            <div>PDF lĩnh vực</div>
+            <div>${g.pdfName?`<a href=\"${g.pdfUrl||'#'}\" target=\"_blank\">${g.pdfName}</a>`:'(chưa chọn)'}</div>
+          </div>
+
+          <div class=\"row\">
+            <div class=\"col-4\">
+              <label>Mã thủ tục (RQ)</label>
+              <input type=\"text\" placeholder=\"vd: 1.002179.000.00.00.H41\" data-k=\"code\"/>
+            </div>
+            <div class=\"col-8\">
+              <label>Tên thủ tục</label>
+              <input type=\"text\" placeholder=\"vd: Đăng ký, đăng ký lại, điều chỉnh…\" data-k=\"title\"/>
+            </div>
+            <div class=\"col-6\">
+              <label>Liên kết trực tuyến (URL) – dán link Google Drive/Docs</label>
+              <input type=\"url\" placeholder=\"Dán link xem (Viewer). Code sẽ tự chuyển sang /preview\" data-k=\"extUrl\"/>
+            </div>
+            <div class=\"col-6\">
+              <label>Đính kèm PDF thủ tục (cục bộ)</label>
+              <input type=\"file\" accept=\"application/pdf\" data-k=\"file\"/>
+            </div>
+            <div class=\"col-12\">
+              <label>Liên hệ tải về (tùy chọn, nếu khác Thiết lập chung)</label>
+              <input type=\"text\" placeholder=\"Nếu bỏ trống sẽ dùng liên hệ chung\" data-k=\"contact\"/>
+            </div>
+            <div class=\"col-12\" style=\"display:flex;gap:8px;flex-wrap:wrap\">
+              <button class=\"btn ok\">+ Thêm thủ tục vào nhóm</button>
+              <button class=\"btn\" data-act=\"printList\">In danh sách nhóm</button>
+              <button class=\"btn warn\" data-act=\"delGroup\">Xóa nhóm</button>
+            </div>
+          </div>
+          <div class=\"items\"></div>
+        `;
+
+        // Sự kiện: thêm thủ tục
+        el.querySelector('.btn.ok').addEventListener('click', ()=>{
+          const code = el.querySelector('input[data-k="code"]').value.trim();
+          const title = el.querySelector('input[data-k="title"]').value.trim();
+          let extUrl = el.querySelector('input[data-k="extUrl"]').value.trim();
+          extUrl = normalizeDriveLink(extUrl);
+          const contact = el.querySelector('input[data-k="contact"]').value.trim();
+          const fileInp = el.querySelector('input[data-k="file"]');
+          let fileName = '', fileUrl = '';
+          if(fileInp.files && fileInp.files[0]){ fileName = fileInp.files[0].name; fileUrl = URL.createObjectURL(fileInp.files[0]); }
+          if(!code || !title){ alert('Vui lòng nhập Mã thủ tục và Tên thủ tục.'); return; }
+          const it = { id: uid(), code, title, extUrl, fileName, fileUrl, contact };
+          const gi = store.groups.findIndex(x=>x.id===g.id);
+          store.groups[gi].items.unshift(it);
+          // reset
+          ['code','title','extUrl','contact'].forEach(k=> el.querySelector(`input[data-k="${k}"]`).value='');
+          fileInp.value='';
+          saveStore();
+          renderGroups();
+          doSearch($$('#inpSearch').value);
+        });
+
+        // In danh sách nhóm
+        el.querySelector('[data-act="printList"]').addEventListener('click', ()=> printGroup(g.id));
+
+        // Xóa nhóm
+        el.querySelector('[data-act="delGroup"]').addEventListener('click', ()=>{
+          if(confirm('Xóa toàn bộ nhóm và thủ tục bên trong?')){
+            store.groups = store.groups.filter(x=>x.id!==g.id); saveStore(); renderGroups(); doSearch($$('#inpSearch').value);
+          }
+        });
+
+        // Danh sách item trong nhóm
+        const list = el.querySelector('.items');
+        g.items.forEach(it=>{
+          const li = document.createElement('div');
+          li.className='item';
+          const link = it.extUrl || it.fileUrl || g.pdfUrl || '';
+          const driveNote = isDrivePreview(it.extUrl) ? ' (Drive preview – khóa tải/chỉnh sửa tùy quyền trên Drive)' : '';
+          li.innerHTML = `
+            <div class=\"t\">${it.title}</div>
+            <div class=\"c\">RQ: <b>${it.code}</b>${driveNote}</div>
+            <div class=\"act\">
+              ${it.extUrl?`<a class=\"btn\" href=\"${it.extUrl}\" target=\"_blank\">Mở URL</a>`:''}
+              ${it.fileUrl?`<a class=\"btn\" href=\"${it.fileUrl}\" target=\"_blank\">Mở PDF</a>`:''}
+              ${g.pdfUrl?`<a class=\"btn\" href=\"${g.pdfUrl}\" target=\"_blank\">PDF lĩnh vực</a>`:''}
+              <button class=\"btn\" data-act=\"copyLink\">Copy link</button>
+              <button class=\"btn\" data-act=\"preview\" data-id=\"${it.id}\">Xem/QR</button>
+              <button class=\"btn warn\" data-act=\"del\" data-id=\"${it.id}\">Xóa</button>
+            </div>
+          `;
+
+          li.querySelector('[data-act="copyLink"]').addEventListener('click', ()=> copyToClipboard(link || it.code));
+          li.querySelector('[data-act="preview"]').addEventListener('click', ()=> previewItem(g.id, it.id));
+          li.querySelector('[data-act="del"]').addEventListener('click', ()=>{
+            if(confirm('Xóa thủ tục này?')){
+              const gi = store.groups.findIndex(x=>x.id===g.id);
+              store.groups[gi].items = store.groups[gi].items.filter(x=>x.id!==it.id);
+              saveStore(); renderGroups(); doSearch($$('#inpSearch').value);
+            }
+          });
+          list.appendChild(li);
+        });
+
+        wrap.appendChild(el);
+      });
+      refreshCounters();
+    }
+
+    function previewItem(groupId, itemId){
+      const g = store.groups.find(x=>x.id===groupId);
+      const it = g.items.find(x=>x.id===itemId);
+      const linkRaw = it.extUrl || it.fileUrl || g.pdfUrl || '';
+      const linkNorm = normalizeDriveLink(linkRaw);
+      const link = linkNorm || linkRaw;
+      const qrContent = chooseLinkForQR(g, it);
+      const usedFallback = (qrContent !== link);
+      const contact = it.contact || store.ownerContact || '';
+
+      // Popup
+      const dlg = document.createElement('div');
+      dlg.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px';
+      dlg.innerHTML = `
+        <div class=\"card\" style=\"max-width:860px;width:100%\">
+          <h4>${it.title}</h4>
+          <div class=\"kv\">
+            <div>Lĩnh vực</div><div>${g.name}</div>
+            <div>Mã RQ</div><div><b>${it.code}</b></div>
+            <div>Liên kết</div><div>${link?`<a href=\"${link}\" target=\"_blank\">${link}</a>`:'(chưa có)'}</div>
+          </div>
+          ${isDrivePreview(link) ? `<iframe class=\"drive-frame\" src=\"${link}\" allow=\"autoplay\"></iframe>` : ''}
+          <div class=\"barcode-wrap\">
+            <div>
+              <div class=\"hint\">Mã vạch Code128 (RQ)</div>
+              <svg id=\"bc_${it.id}\" class=\"barcode\"></svg>
+            </div>
+            <div>
+              <div class=\"hint\">QR ${usedFallback? '(đường dẫn ngắn #open)' : (isDrivePreview(link)? '(Drive preview)' : '(URL)')}</div>
+              <div id=\"qr_${it.id}\" class=\"qr\"></div>
+            </div>
+          </div>
+          <div class=\"links\">
+            ${link?`<a class=\"btn ok\" href=\"${link}\" target=\"_blank\">Mở liên kết</a>`:''}
+            <button class=\"btn\" id=\"btnCopy\">Copy link</button>
+            ${contact?`<span class=\"pill\">Muốn tải về? Liên hệ: ${contact}</span>`:''}
+            <button class=\"btn\" id=\"btnPrint\">In tem</button>
+            <button class=\"btn\" id=\"btnClose\">Đóng</button>
+          </div>
+          ${usedFallback?`<div class=\"hint\">QR dùng <b>đường dẫn ngắn</b> để đảm bảo quét được. Khi quét sẽ tự mở đúng hồ sơ.</div>`:''}
+          ${isDrivePreview(link)?`<div class=\"hint\">Xem trước trên Drive. Tải về/chỉnh sửa bị khóa nếu bạn đã bật "Prevent viewers from downloading, printing, copying" trên Drive.</div>`:''}
+        </div>`;
+      document.body.appendChild(dlg);
+
+      // Barcode & QR
+      safeGenBarcode(`#bc_${it.id}`, it.code);
+      safeGenQR($$(`#qr_${it.id}`), qrContent);
+
+      // Hành động
+      $$('#btnCopy', dlg).addEventListener('click', ()=> copyToClipboard(link || it.code));
+      $$('#btnPrint', dlg).addEventListener('click', ()=>{
+        const w = window.open('', '_blank');
+        w.document.write(`<!doctype html><html><head><meta charset='utf-8'><title>In mã vạch</title></head><body>`);
+        w.document.write(`<div style=\"font-family:Arial,sans-serif\">
+          <div><b>${g.name}</b></div>
+          <div>${it.title}</div>
+          <div>RQ: <b>${it.code}</b></div>
+          <div>${link?`<a href='${link}'>${link}</a>`:''}</div>
+          <div>${$$(`#bc_${it.id}`).outerHTML}</div>
+          <div>${$$(`#qr_${it.id}`).outerHTML}</div>
+          ${contact?`<div>Muốn tải về? Liên hệ: ${contact}</div>`:''}
+        </div>`);
+        w.document.write('</body></html>'); w.document.close(); w.focus(); w.print();
+      });
+      $$('#btnClose', dlg).addEventListener('click', ()=> dlg.remove());
+      dlg.addEventListener('click', (e)=>{ if(e.target===dlg) dlg.remove(); });
+    }
+
+    function printGroup(groupId){
+      const g = store.groups.find(x=>x.id===groupId);
+      const w = window.open('', '_blank');
+      w.document.write(`<!doctype html><html><head><meta charset='utf-8'><title>In danh sách – ${g.name}</title></head><body>`);
+      w.document.write(`<h3>${g.name}</h3>`);
+      w.document.write(`<ol>`);
+      g.items.forEach(it=>{ w.document.write(`<li>${it.title} — RQ: <b>${it.code}</b></li>`); });
+      w.document.write(`</ol>`);
+      w.document.write('</body></html>'); w.document.close(); w.focus(); w.print();
+    }
+
+    function doSearch(q){
+      const R = $$('#results'); R.innerHTML='';
+      const key = fold(q||'');
+      const all = [];
+      store.groups.forEach(g=> g.items.forEach(it=> all.push({g,it})) );
+      const filt = !key ? all : all.filter(({g,it})=> fold(`${g.name}\n${it.title}\n${it.code}`).includes(key) );
+      filt.forEach(({g,it})=>{
+        const linkRaw = it.extUrl || it.fileUrl || g.pdfUrl || '';
+        const link = normalizeDriveLink(linkRaw) || linkRaw;
+        const card = document.createElement('div'); card.className='card';
+        card.innerHTML = `
+          <h4>${it.title}</h4>
+          <div class=\"kv\">
+            <div>Lĩnh vực</div><div>${g.name}</div>
+            <div>Mã RQ</div><div><b>${it.code}</b></div>
+            <div>Liên kết</div><div>${link?`<a href=\"${link}\" target=\"_blank\">${link}</a>`:'(chưa có)'}</div>
+          </div>
+          <div class=\"barcode-wrap\">
+            <svg class=\"barcode\"></svg>
+            <div class=\"qr\"></div>
+          </div>
+          <div class=\"links\">
+            ${link?`<a class=\"btn ok\" href=\"${link}\" target=\"_blank\">Mở liên kết</a>`:''}
+            <button class=\"btn\" data-act=\"preview\">Xem/ In tem</button>
+          </div>`;
+        R.appendChild(card);
+        // Barcode & QR (card)
+        const bcEl = card.querySelector('.barcode');
+        safeGenBarcode(bcEl, it.code);
+        const qrEl = card.querySelector('.qr');
+        const qrContent = chooseLinkForQR(g, it);
+        safeGenQR(qrEl, qrContent);
+        card.querySelector('[data-act="preview"]').addEventListener('click', ()=> previewItem(g.id, it.id));
+      });
+    }
+
+    // ====== Sự kiện giao diện tổng ======
+    $$('#btnAddGroup').addEventListener('click', ()=>{
+      if(store.groups.length>=23){ alert('Đã đạt tối đa 23 lĩnh vực.'); return; }
+      const name = $$('#inpGroupName').value.trim();
+      const file = $$('#inpGroupPdf').files[0];
+      if(!name && !file){ alert('Nhập tên lĩnh vực hoặc chọn PDF.'); return; }
+      const g = { id: uid(), name: name || (file? file.name.replace(/\.pdf$/i,'') : 'Lĩnh vực mới'), pdfName:'', pdfUrl:'', items: [] };
+      if(file){ g.pdfName = file.name; g.pdfUrl = URL.createObjectURL(file); }
+      store.groups.push(g); saveStore();
+      // reset
+      $$('#inpGroupName').value=''; $$('#inpGroupPdf').value='';
+      renderGroups();
+    });
+
+    $$('#btnBulkPdf').addEventListener('click', ()=>{
+      const inp = document.createElement('input');
+      inp.type='file'; inp.accept='application/pdf'; inp.multiple=true;
+      inp.onchange = ()=>{
+        const files = Array.from(inp.files||[]);
+        for(const f of files){ if(store.groups.length>=23) break; const g = { id: uid(), name: f.name.replace(/\.pdf$/i,''), pdfName: f.name, pdfUrl: URL.createObjectURL(f), items: [] }; store.groups.push(g); }
+        saveStore(); renderGroups();
+      };
+      inp.click();
+    });
+
+    $$('#inpOwnerContact').addEventListener('input', (e)=>{ store.ownerContact = e.target.value; saveStore(); });
+
+    $$('#inpSearch').addEventListener('input', (e)=> doSearch(e.target.value));
+    $$('#btnClear').addEventListener('click', ()=>{ $$('#inpSearch').value=''; doSearch(''); });
+
+    $$('#btnExport').addEventListener('click', ()=>{
+      const blob = new Blob([JSON.stringify(store,null,2)], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'du_lieu_linh_vuc_drive.json'; a.click(); URL.revokeObjectURL(url);
+    });
+
+    $$('#impJson').addEventListener('change', (e)=>{
+      const f = e.target.files[0]; if(!f) return; const rd = new FileReader();
+      rd.onload = ()=>{ try{ const data = JSON.parse(rd.result); if(!data || !Array.isArray(data.groups)) throw new Error('Dữ liệu không hợp lệ'); store = data; saveStore(); renderGroups(); doSearch($$('#inpSearch').value); }catch(err){ alert('Không đọc được JSON: '+err.message); } };
+      rd.readAsText(f); e.target.value = '';
+    });
+
+    // ====== Deep-link: #open=<itemId> => tự mở popup mã vạch ======
+    function findItemById(id){
+      for(const g of store.groups){ for(const it of g.items){ if(it.id===id) return {g,it}; } }
+      return null;
+    }
+    function handleHashOpen(){
+      const m = location.hash.match(/#open=([^&]+)/); if(!m) return; const id = decodeURIComponent(m[1]);
+      const found = findItemById(id); if(found){ previewItem(found.g.id, found.it.id); }
+    }
+    window.addEventListener('hashchange', handleHashOpen);
+
+    // ====== Tự kiểm thử ======
+    function logTest(msg, ok=true){ const row = `${ok?'✅':'❌'} ${msg}`; const tlog = $$('#testLog'); tlog.textContent += (tlog.textContent?"\n":"") + row; }
+    function runTests(){
+      $$('#testLog').textContent=''; let pass=0, fail=0;
+      // TC1: QR với link ngắn
+      const tmp1 = document.createElement('div'); const r1 = safeGenQR(tmp1, 'https://example.com/x');
+      if(r1.ok && tmp1.querySelector('img,canvas')){ logTest('TC1 QR link ngắn: PASS'); pass++; } else { logTest('TC1 QR link ngắn: FAIL', false); fail++; }
+      // TC2: QR với link rất dài -> fallback
+      const longLink = 'https://example.com/' + 'a'.repeat(500);
+      const tmp2 = document.createElement('div'); const r2 = safeGenQR(tmp2, longLink);
+      if(tmp2.querySelector('img,canvas')){ logTest('TC2 QR link dài: PASS (đã fallback nếu cần)'); pass++; } else { logTest('TC2 QR link dài: FAIL', false); fail++; }
+      // TC3: Barcode Code128 với mã chuẩn
+      const tmp3 = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      try{ safeGenBarcode(tmp3, '1.002179.000.00.00.H41'); if(tmp3.getAttribute('jsbarcode-value') || tmp3.querySelector('rect')){ logTest('TC3 Barcode Code128: PASS'); pass++; } else { logTest('TC3 Barcode Code128: FAIL (không có nội dung)', false); fail++; } }
+      catch(e){ logTest('TC3 Barcode Code128: FAIL ('+e.message+')', false); fail++; }
+      // TC4: normalizeDriveLink file/d -> preview
+      const l1 = normalizeDriveLink('https://drive.google.com/file/d/FILEID/view?usp=sharing');
+      if(/\/file\/d\/FILEID\/preview$/.test(l1)){ logTest('TC4 file/d -> preview: PASS'); pass++; } else { logTest('TC4 file/d -> preview: FAIL', false); fail++; }
+      // TC5: normalizeDriveLink docs -> preview
+      const l2 = normalizeDriveLink('https://docs.google.com/document/d/DOCID/edit?usp=sharing');
+      if(/document\/d\/DOCID\/preview$/.test(l2)){ logTest('TC5 docs -> preview: PASS'); pass++; } else { logTest('TC5 docs -> preview: FAIL', false); fail++; }
+      // TC6: chooseLinkForQR ưu tiên preview (ngắn)
+      const fakeG={id:'g1', name:'Test', pdfUrl:''}; const fakeIt={id:'it1', code:'X', title:'T', extUrl:'https://drive.google.com/file/d/XYZ/view?usp=sharing'};
+      const c = chooseLinkForQR(fakeG, fakeIt); if(c.includes('/preview')){ logTest('TC6 chooseLinkForQR dùng preview: PASS'); pass++; } else { logTest('TC6 chooseLinkForQR dùng preview: FAIL', false); fail++; }
+      $$('#testSum').textContent = `Kết quả: ${pass} PASS / ${fail} FAIL`;
+    }
+    $$('#btnRunTests').addEventListener('click', runTests);
+
+    // ====== Theme handling ======
+    const THEME_KEY = 'ui_theme_pref_v1';
+    function applyTheme(t){ document.documentElement.setAttribute('data-theme', t==='dark'?'dark':''); $$('#themeToggle').checked = (t==='dark'); localStorage.setItem(THEME_KEY, t); }
+    function initTheme(){ const t = localStorage.getItem(THEME_KEY)||'light'; applyTheme(t); }
+    $$('#themeToggle').addEventListener('change', (e)=> applyTheme(e.target.checked?'dark':'light'));
+
+    // ====== Khởi động ======
+    initTheme();
+    renderGroups();
+    doSearch('');
+    handleHashOpen();
+  </script>
+</body>
+</html>
